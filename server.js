@@ -7,9 +7,9 @@ const app = express();
 
 // MySQL Pool konfigurieren
 const pool = mysql.createPool({
-    host: "81.169.145.94",
+    host: "db5016985737.hosting-data.io",
     user: "dbu2322921",
-    password: "Uffing11!!",
+    password: "Maximilian21!!",
     database: "dbs13687621",
     port: 3306,
     waitForConnections: true,
@@ -17,9 +17,12 @@ const pool = mysql.createPool({
     queueLimit: 0,
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
-    ssl: false,
+    ssl: {
+        rejectUnauthorized: false
+    },
     connectTimeout: 60000,
-    multipleStatements: true
+    multipleStatements: true,
+    debug: true
 }).promise();  // Wichtig: Promise-Wrapper für den Pool
 
 // Middleware
