@@ -1,7 +1,7 @@
 require('dotenv').config();
 
 const express = require('express');
-const mysql = require('mysql2/promise');
+const mysql = require('mysql2');
 const cors = require('cors');
 const app = express();
 
@@ -15,14 +15,37 @@ const pool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
-});
+}).promise();  // Wichtig: Promise-Wrapper für den Pool
 
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Test-Endpunkt für Datenbankverbindung
+// Funktion zum Testen der Datenbankverbindung
+async function testConnection() {
+    try {
+        const connection = await pool.getConnection();
+        await connection.ping();
+        connection.release();
+        return true;
+    } catch (error) {
+        console.error('Database connection error:', error);
+        return false;
+    }
+}
+
+// Test-Endpunkt mit Verbindungstest
 app.get('/api/test', async (req, res) => {
     try {
+        const isConnected = await testConnection();
+        if (!isConnected) {
+            res.status(500).json({ 
+                error: "Database connection failed",
+                connected: false 
+            });
+            return;
+        }
+
         const [rows] = await pool.query('SELECT COUNT(*) as count FROM products');
         res.json({ 
             connected: true,
@@ -111,6 +134,8 @@ app.delete('/api/products/:id', async (req, res) => {
 
 // Server starten
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`Server läuft auf Port ${PORT}`);
+    const isConnected = await testConnection();
+    console.log(`Datenbankverbindung: ${isConnected ? 'erfolgreich' : 'fehlgeschlagen'}`);
 }); 
