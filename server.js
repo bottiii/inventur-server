@@ -44,67 +44,91 @@ app.get('/api/products', (req, res) => {
 
 // Neues Produkt erstellen
 app.post('/api/products', (req, res) => {
-    const { name, category, ve, quantity, price, user_id } = req.body;
-    const total = price * quantity;
-
-    const product = {
-        name,
-        category,
-        ve,
-        quantity,
-        price,
-        total,
-        user_id,
-        created_at: new Date()
-    };
-
-    connection.query('INSERT INTO products SET ?', product, (error) => {
-        if (error) {
-            res.status(500).json({ error: error.message });
+    connection.getConnection((err, conn) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
             return;
         }
-        res.status(201).json({ message: 'Produkt erstellt' });
+
+        const { name, category, ve, quantity, price, user_id } = req.body;
+        const total = price * quantity;
+
+        const product = {
+            name,
+            category,
+            ve,
+            quantity,
+            price,
+            total,
+            user_id,
+            created_at: new Date()
+        };
+
+        conn.query('INSERT INTO products SET ?', product, (error) => {
+            conn.release();
+            if (error) {
+                res.status(500).json({ error: error.message });
+                return;
+            }
+            res.status(201).json({ message: 'Produkt erstellt' });
+        });
     });
 });
 
 // Produkt aktualisieren
 app.put('/api/products/:id', (req, res) => {
-    const { id } = req.params;
-    const { name, category, ve, quantity, price, user_id } = req.body;
-    const total = price * quantity;
-
-    const product = {
-        name,
-        category,
-        ve,
-        quantity,
-        price,
-        total,
-        user_id
-    };
-
-    connection.query(
-        'UPDATE products SET ? WHERE id = ?',
-        [product, id],
-        (error) => {
-            if (error) {
-                res.status(500).json({ error: error.message });
-                return;
-            }
-            res.json({ message: 'Produkt aktualisiert' });
+    connection.getConnection((err, conn) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
         }
-    );
+
+        const { id } = req.params;
+        const { name, category, ve, quantity, price, user_id } = req.body;
+        const total = price * quantity;
+
+        const product = {
+            name,
+            category,
+            ve,
+            quantity,
+            price,
+            total,
+            user_id
+        };
+
+        conn.query(
+            'UPDATE products SET ? WHERE id = ?',
+            [product, id],
+            (error) => {
+                conn.release();
+                if (error) {
+                    res.status(500).json({ error: error.message });
+                    return;
+                }
+                res.json({ message: 'Produkt aktualisiert' });
+            }
+        );
+    });
 });
 
 // Produkt löschen
 app.delete('/api/products/:id', (req, res) => {
-    const { id } = req.params;
-    connection.query('DELETE FROM products WHERE id = ?', id, (error) => {
-        if (error) {
-            res.status(500).json({ error: error.message });
+    connection.getConnection((err, conn) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
             return;
         }
-        res.json({ message: 'Produkt gelöscht' });
+
+        const { id } = req.params;
+        conn.query('DELETE FROM products WHERE id = ?', id, (error) => {
+            conn.release();
+            if (error) {
+                res.status(500).json({ error: error.message });
+                return;
+            }
+            res.json({ message: 'Produkt gelöscht' });
+        });
     });
 });
 
