@@ -7,7 +7,7 @@ const app = express();
 
 // MySQL Pool konfigurieren
 const pool = mysql.createPool({
-    host: "81.169.145.94",
+    host: "db5016985737.hosting-data.io",
     user: "dbu2322921",
     password: "Uffing11!!",
     database: "dbs13687621",
@@ -18,8 +18,11 @@ const pool = mysql.createPool({
     enableKeepAlive: true,
     keepAliveInitialDelay: 0,
     ssl: {
-        rejectUnauthorized: false
-    }
+        rejectUnauthorized: false,
+        minVersion: 'TLSv1.2'
+    },
+    connectTimeout: 30000, // 30 Sekunden
+    multipleStatements: true
 }).promise();  // Wichtig: Promise-Wrapper für den Pool
 
 // Middleware
@@ -30,11 +33,16 @@ app.use(express.json());
 async function testConnection() {
     try {
         const connection = await pool.getConnection();
-        await connection.ping();
+        console.log('Verbindung hergestellt');
+        
+        // Einfache Test-Query
+        const [result] = await connection.query('SELECT 1');
+        console.log('Query erfolgreich:', result);
+        
         connection.release();
         return true;
     } catch (error) {
-        console.error('Database connection error:', error);
+        console.error('Detaillierter Verbindungsfehler:', error);
         return false;
     }
 }
