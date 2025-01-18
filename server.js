@@ -17,30 +17,29 @@ const connection = mysql.createPool({
     queueLimit: 0
 });
 
-// Verbindung testen
-connection.connect((err) => {
-    if (err) {
-        console.error('Fehler bei der Datenbankverbindung:', err);
-        return;
-    }
-    console.log('Erfolgreich mit MySQL verbunden');
-});
-
 app.use(cors());
 app.use(express.json());
 
 // Alle Produkte abrufen
 app.get('/api/products', (req, res) => {
-    connection.query(
-        'SELECT id, name, category, ve, quantity, price, total, user_id, created_at FROM products',
-        (error, results) => {
-            if (error) {
-                res.status(500).json({ error: error.message });
-                return;
-            }
-            res.json(results);
+    connection.getConnection((err, conn) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
         }
-    );
+
+        conn.query(
+            'SELECT id, name, category, ve, quantity, price, total, user_id, created_at FROM products',
+            (error, results) => {
+                conn.release();
+                if (error) {
+                    res.status(500).json({ error: error.message });
+                    return;
+                }
+                res.json(results);
+            }
+        );
+    });
 });
 
 // Neues Produkt erstellen
