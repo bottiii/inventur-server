@@ -6,12 +6,15 @@ const cors = require('cors');
 const app = express();
 
 // MySQL Verbindung konfigurieren
-const connection = mysql.createConnection({
+const connection = mysql.createPool({
     host: "db5016985737.hosting-data.io",
     user: "dbu2322921",
     password: "Uffing11!!",
     database: "dbs13687621",
-    port: 3306
+    port: 3306,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
 // Verbindung testen
@@ -108,41 +111,40 @@ app.delete('/api/products/:id', (req, res) => {
 
 // Test-Endpunkt für Datenbankverbindung
 app.get('/api/test', (req, res) => {
-    connection.query('SELECT 1 + 1 AS solution', (error, results) => {
-        if (error) {
-            console.error('Datenbankfehler:', error);
+    connection.getConnection((err, conn) => {
+        if (err) {
+            console.error('Datenbankfehler:', err);
             res.status(500).json({ 
-                error: error.message,
+                error: err.message,
                 connected: false 
             });
             return;
         }
-        
-        // Test-Query für products table
-        connection.query(
-            'SELECT COUNT(*) as count FROM products',
-            (error, results) => {
-                if (error) {
-                    console.error('Products table error:', error);
-                    res.status(500).json({ 
-                        error: error.message,
-                        connected: false 
-                    });
-                    return;
-                }
-                
-                res.json({ 
-                    connected: true,
-                    productCount: results[0].count,
-                    message: 'Datenbankverbindung erfolgreich' 
+
+        conn.query('SELECT COUNT(*) as count FROM products', (error, results) => {
+            // Verbindung zurück in den Pool geben
+            conn.release();
+            
+            if (error) {
+                console.error('Products table error:', error);
+                res.status(500).json({ 
+                    error: error.message,
+                    connected: false 
                 });
+                return;
             }
-        );
+            
+            res.json({ 
+                connected: true,
+                productCount: results[0].count,
+                message: 'Datenbankverbindung erfolgreich' 
+            });
+        });
     });
 });
 
 // Server starten
-const PORT = process.env.PORT || 80;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`Server läuft auf Port ${PORT}`);
 }); 
