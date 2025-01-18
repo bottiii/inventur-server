@@ -7,7 +7,7 @@ const app = express();
 
 // MySQL Pool konfigurieren
 const pool = mysql.createPool({
-    host: "db5016985737.hosting-data.io",
+    host: "db5016985737.hosting-data.io.mysql.service.one.com",
     user: "dbu2322921",
     password: "Maximilian21!!",
     database: "dbs13687621",
@@ -22,7 +22,7 @@ const pool = mysql.createPool({
     },
     connectTimeout: 60000,
     multipleStatements: true,
-    debug: true
+    debug: ['ComQueryPacket', 'RowDataPacket']
 }).promise();  // Wichtig: Promise-Wrapper für den Pool
 
 // Middleware
@@ -33,10 +33,12 @@ app.use(express.json());
 async function testConnection() {
     try {
         console.log('Versuche Verbindung herzustellen...');
+        console.log('Host:', pool.config.connectionConfig.host);
+        console.log('Port:', pool.config.connectionConfig.port);
+        
         const connection = await pool.getConnection();
         console.log('Verbindung hergestellt');
         
-        // Einfache Test-Query
         const [result] = await connection.query('SELECT 1');
         console.log('Query erfolgreich:', result);
         
@@ -44,8 +46,7 @@ async function testConnection() {
         return true;
     } catch (error) {
         console.error('Detaillierter Verbindungsfehler:', error);
-        // Stack Trace ausgeben
-        console.error(error.stack);
+        console.error('Stack:', error.stack);
         return false;
     }
 }
