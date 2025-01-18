@@ -14,7 +14,12 @@ const pool = mysql.createPool({
     port: 3306,
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
+    ssl: {
+        rejectUnauthorized: false
+    }
 }).promise();  // Wichtig: Promise-Wrapper für den Pool
 
 // Middleware
