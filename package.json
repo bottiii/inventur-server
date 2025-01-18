@@ -2,11 +2,13 @@
   "name": "inventur-server",
   "version": "1.0.0",
   "main": "server.js",
+  "license": "MIT",
   "engines": {
     "node": "18.x"
   },
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "npm install"
   },
   "dependencies": {
     "cors": "^2.8.5",
