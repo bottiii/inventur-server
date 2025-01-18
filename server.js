@@ -7,7 +7,7 @@ const app = express();
 
 // MySQL Pool konfigurieren
 const pool = mysql.createPool({
-    host: "db5016985737.hosting-data.io",
+    host: "81.169.145.94",
     user: "dbu2322921",
     password: "Uffing11!!",
     database: "dbs13687621",
