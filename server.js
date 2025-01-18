@@ -1,12 +1,12 @@
 require('dotenv').config();
 
 const express = require('express');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise');
 const cors = require('cors');
 const app = express();
 
-// MySQL Verbindung konfigurieren
-const connection = mysql.createPool({
+// MySQL Pool konfigurieren
+const pool = mysql.createPool({
     host: "db5016985737.hosting-data.io",
     user: "dbu2322921",
     password: "Uffing11!!",
@@ -20,36 +20,39 @@ const connection = mysql.createPool({
 app.use(cors());
 app.use(express.json());
 
-// Alle Produkte abrufen
-app.get('/api/products', (req, res) => {
-    connection.getConnection((err, conn) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
+// Test-Endpunkt für Datenbankverbindung
+app.get('/api/test', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT COUNT(*) as count FROM products');
+        res.json({ 
+            connected: true,
+            productCount: rows[0].count,
+            message: 'Datenbankverbindung erfolgreich' 
+        });
+    } catch (error) {
+        console.error('Database error:', error);
+        res.status(500).json({ 
+            error: error.message,
+            connected: false 
+        });
+    }
+});
 
-        conn.query(
-            'SELECT id, name, category, ve, quantity, price, total, user_id, created_at FROM products',
-            (error, results) => {
-                conn.release();
-                if (error) {
-                    res.status(500).json({ error: error.message });
-                    return;
-                }
-                res.json(results);
-            }
+// Alle Produkte abrufen
+app.get('/api/products', async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            'SELECT id, name, category, ve, quantity, price, total, user_id, created_at FROM products'
         );
-    });
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Neues Produkt erstellen
-app.post('/api/products', (req, res) => {
-    connection.getConnection((err, conn) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
+app.post('/api/products', async (req, res) => {
+    try {
         const { name, category, ve, quantity, price, user_id } = req.body;
         const total = price * quantity;
 
@@ -64,25 +67,16 @@ app.post('/api/products', (req, res) => {
             created_at: new Date()
         };
 
-        conn.query('INSERT INTO products SET ?', product, (error) => {
-            conn.release();
-            if (error) {
-                res.status(500).json({ error: error.message });
-                return;
-            }
-            res.status(201).json({ message: 'Produkt erstellt' });
-        });
-    });
+        await pool.query('INSERT INTO products SET ?', [product]);
+        res.status(201).json({ message: 'Produkt erstellt' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Produkt aktualisieren
-app.put('/api/products/:id', (req, res) => {
-    connection.getConnection((err, conn) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
+app.put('/api/products/:id', async (req, res) => {
+    try {
         const { id } = req.params;
         const { name, category, ve, quantity, price, user_id } = req.body;
         const total = price * quantity;
@@ -97,73 +91,22 @@ app.put('/api/products/:id', (req, res) => {
             user_id
         };
 
-        conn.query(
-            'UPDATE products SET ? WHERE id = ?',
-            [product, id],
-            (error) => {
-                conn.release();
-                if (error) {
-                    res.status(500).json({ error: error.message });
-                    return;
-                }
-                res.json({ message: 'Produkt aktualisiert' });
-            }
-        );
-    });
+        await pool.query('UPDATE products SET ? WHERE id = ?', [product, id]);
+        res.json({ message: 'Produkt aktualisiert' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Produkt löschen
-app.delete('/api/products/:id', (req, res) => {
-    connection.getConnection((err, conn) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-
+app.delete('/api/products/:id', async (req, res) => {
+    try {
         const { id } = req.params;
-        conn.query('DELETE FROM products WHERE id = ?', id, (error) => {
-            conn.release();
-            if (error) {
-                res.status(500).json({ error: error.message });
-                return;
-            }
-            res.json({ message: 'Produkt gelöscht' });
-        });
-    });
-});
-
-// Test-Endpunkt für Datenbankverbindung
-app.get('/api/test', (req, res) => {
-    connection.getConnection((err, conn) => {
-        if (err) {
-            console.error('Datenbankfehler:', err);
-            res.status(500).json({ 
-                error: err.message,
-                connected: false 
-            });
-            return;
-        }
-
-        conn.query('SELECT COUNT(*) as count FROM products', (error, results) => {
-            // Verbindung zurück in den Pool geben
-            conn.release();
-            
-            if (error) {
-                console.error('Products table error:', error);
-                res.status(500).json({ 
-                    error: error.message,
-                    connected: false 
-                });
-                return;
-            }
-            
-            res.json({ 
-                connected: true,
-                productCount: results[0].count,
-                message: 'Datenbankverbindung erfolgreich' 
-            });
-        });
-    });
+        await pool.query('DELETE FROM products WHERE id = ?', [id]);
+        res.json({ message: 'Produkt gelöscht' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Server starten
